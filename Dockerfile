@@ -8,6 +8,6 @@ RUN TZ=Asia/Taipei \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone \
     && dpkg-reconfigure -f noninteractive tzdata \
-    && pip install requests
+    && pip install requests && mkdir leaves
 
-CMD python sensor.py
+CMD python -u sensor.py
