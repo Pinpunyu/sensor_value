@@ -10,25 +10,26 @@ while 1:
 
         try:
             img_data = requests.get(
-                f'http://219.86.140.31:890{i}/cgi-bin/viewer/video.jpg?streamid=0', auth=('root', 'a7075701'), timeout=1)
-            with open(f'leaves/video{i-1}/video{i-1}_{now_time}.jpg', 'wb') as handler:
+                f'http://219.86.140.31:890{i}/cgi-bin/viewer/video.jpg?streamid=0', auth=('root', 'a7075701'), timeout=5)
+            print(img_data.status_code)
+            with open(f'video{i-1}_{now_time}.jpg', 'wb') as handler:
                 handler.write(img_data.content)
-        except: 
+        except:
             print(f"video{i-1} Error")
-
+        
     try:
         rt = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
             "FunNo": "SF001_TEMP_No4",
-        })
+        }, timeout=5)
         rh = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
             "FunNo": "SF001_HUMI_No4",
-        })
-
+        }, timeout=5)
+        print(f"{rt.json()['d']} {rh.json()['d']}")
         sensor = requests.post('http://114.33.145.3/api/test_sensor', json={
             "temp": rt.json()['d'],
             "humi": rh.json()['d'],
             "datetime": now_time,
-        })
+        }, timeout=5)
 
     except:
         print(f"Sensor Error")
