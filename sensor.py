@@ -12,7 +12,7 @@ while 1:
             img_data = requests.get(
                 f'http://219.86.140.31:890{i}/cgi-bin/viewer/video.jpg?streamid=0', auth=('root', 'a7075701'), timeout=5)
             
-            with open(f'video{i-1}_{now_time}.jpg', 'wb') as handler:
+            with open(f'leaves/video{i-1}/video{i-1}_{now_time}.jpg', 'wb') as handler:
                 handler.write(img_data.content)
         except:
             print(f"video{i-1} Error")
