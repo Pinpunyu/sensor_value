@@ -4,7 +4,8 @@ COPY sensor.py /app/
 
 WORKDIR /app
 
-RUN TZ=Asia/Taipei \
+RUN RUN apt-get update \
+    && TZ=Asia/Taipei \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
     && echo $TZ > /etc/timezone \
     && dpkg-reconfigure -f noninteractive tzdata \
