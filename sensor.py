@@ -4,7 +4,7 @@ import torch
 import time
 
 def detect(pic_path):
-  model = torch.hub.load('ultralytics/yolov5', 'custom', path='/leaves/best.pt')
+  model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/best.pt')
   img = pic_path
   model.iou = 0.5
   model.conf = 0.5
@@ -25,7 +25,7 @@ while 1:
             img_data = requests.get(
                 f'http://219.86.140.31:890{i}/cgi-bin/viewer/video.jpg?streamid=0', auth=('root', 'a7075701'), timeout=10)
             
-            pic_path = f'/leaves/video{i-1}/video{i-1}_{now_time}.jpg'
+            pic_path = f'leaves/video{i-1}/video{i-1}_{now_time}.jpg'
             with open(pic_path, 'wb') as handler:
                 handler.write(img_data.content)
             detect(pic_path)
