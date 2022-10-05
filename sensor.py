@@ -3,7 +3,7 @@ import datetime
 import torch
 import time
 
-def detect(pic_path):
+def detect(pic_path, save_path):
   model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/best.pt')
   img = pic_path
   model.iou = 0.5
@@ -11,9 +11,8 @@ def detect(pic_path):
   model.img = 1280
   results = model(img)
 
-  results.print()
-  results.show()
-  results.save()
+#   results.print()
+  results.save(save_dir = save_path)
 
 while 1:
 
@@ -26,9 +25,10 @@ while 1:
                 f'http://219.86.140.31:890{i}/cgi-bin/viewer/video.jpg?streamid=0', auth=('root', 'a7075701'), timeout=10)
             
             pic_path = f'leaves/video{i-1}/video{i-1}_{now_time}.jpg'
+            save_path = f'leaves/detect{i-1}/exp'
             with open(pic_path, 'wb') as handler:
                 handler.write(img_data.content)
-            detect(pic_path)
+            detect(pic_path, save_path)
         except:
             print(f"video{i-1} Error")
         
