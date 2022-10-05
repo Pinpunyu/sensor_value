@@ -1,4 +1,4 @@
-FROM python:latest
+FROM ultralytics/yolov5
 
 COPY sensor.py /app/
 
