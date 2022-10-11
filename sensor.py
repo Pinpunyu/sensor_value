@@ -85,4 +85,4 @@ while 1:
         except:
             print(f"{err} Error")
 
-    time.sleep(60)
+    time.sleep(3600)
