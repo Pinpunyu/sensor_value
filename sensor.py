@@ -47,7 +47,7 @@ def detect(img, video, now_time):
         blue += 1
 
   print(f'{(1-blue/total_leaves)*100}%')
-  cv2.imwrite(f'leaves/color{video}/color{i-1}_{now_time}.png', hybrid)
+  cv2.imwrite(f'leaves/color{video}/color{video}_{now_time}.png', hybrid)
   return (1-blue/total_leaves)*100
 
 while 1:
