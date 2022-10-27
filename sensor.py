@@ -10,7 +10,7 @@ def detect(img, video, now_time):
   
   model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/best.pt')
   model.iou = 0.5
-  model.conf = 0.5
+  model.conf = 0.3
 
   results = model(img, size=1280)
   results.save(save_dir=f'leaves/detect{video}/exp')
@@ -50,13 +50,22 @@ def detect(img, video, now_time):
   cv2.imwrite(f'leaves/color{video}/color{video}_{now_time}.png', hybrid)
   return (1-blue/total_leaves)*100
 
+account = requests.post('http://114.33.145.3/api/users/login', json={
+    "account": "1",
+    "password": "1"
+}, timeout=5)
+accessToken = account.json()['accessToken']
+refreshToken = account.json()['refreshToken']
+
 while 1:
 
-    now_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now_time = datetime.datetime.now().strftime('%Y-%m-%d,%H-%M-%S')
+    minute_date = datetime.datetime.now().strftime('%Y-%m-%d,%H-%M-%S')[-5:-3]
 
-    for i in range(2, 5):
+    if minute_date == '00':
+      for i in range(2, 5):
 
-        try:
+          try:
             err = f'video{i-1}'
             img_data = requests.get(
                 f'http://219.86.140.31:890{i}/cgi-bin/viewer/video.jpg?streamid=0', auth=('root', 'a7075701'), timeout=5)
@@ -64,25 +73,58 @@ while 1:
             pic_path = f'leaves/video{i-1}/video{i-1}_{now_time}.png'
             with open(pic_path, 'wb') as handler:
                 handler.write(img_data.content)
+            headers = {'Authorization': f'Bearer {accessToken}'}
+            health = requests.post(
+                'http://114.33.145.3/api/healthDatas/addHealthData',
+                headers=headers,
+                json={
+                  "value": round(detect(pic_path, i-1, now_time), 1),
+                  "smallBlockId": i-1,
+                  "sensorId": 3
+                }, timeout=5)
 
-            err = 'sensor'
-            rt = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
-            "FunNo": "SF001_TEMP_No4",
-            }, timeout=5)
+            if health.status_code == 403:
+              refresh = requests.post('http://114.33.145.3/api/users/token', json={
+                "token": refreshToken
+              }, timeout=5)
+              accessToken = refresh.json()['accessToken']
+              refreshToken = refresh.json()['refreshToken']
+            headers = {'Authorization': f'Bearer {accessToken}'}
+            
+            err = 'humidity'
             rh = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
                 "FunNo": "SF001_HUMI_No4",
             }, timeout=5)
-            
-            # print(f"{rt.json()['d']} {rh.json()['d']} {now_time} {detect(pic_path, save_path, i-1)}")
-            sensor = requests.post('http://114.33.145.3/api/test_sensor', json={
-                "temp": rt.json()['d'],
-                "humi": rh.json()['d'],
-                "datetime": now_time,
-                "health": detect(pic_path, i-1, now_time),
-                "video": i-1
+            humidity = requests.post(
+                'http://114.33.145.3/api/humidityDatas/addHumidityData',
+                headers=headers,
+                json={
+                    "value": rh.json()['d'],
+                    "smallBlockId": i-1,
+                    "sensorId": 2
+                }, timeout=5)
+
+            err = 'temperature'
+            rt = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
+            "FunNo": "SF001_TEMP_No4",
             }, timeout=5)
+            temperature = requests.post(
+                'http://114.33.145.3/api/temperatureDatas/addtemperatureData',
+                headers=headers,
+                json={
+                    "value": rt.json()['d'],
+                    "smallBlockId": i-1,
+                    "sensorId": 1
+                }, timeout=5)
 
-        except:
+          except:
             print(f"{err} Error")
+      time.sleep(3300)
+    else:
+        time_aim = str(datetime.datetime.now() + datetime.timedelta(hours=1)
+                       )[:13]+':00:00' 
+        target_time = datetime.datetime.strptime(time_aim, '%Y-%m-%d %H:%M:%S')   
+        delay = (target_time - datetime.datetime.now()
+                 ).total_seconds()             
+        time.sleep(delay)
 
-    time.sleep(3600)
