@@ -1,4 +1,3 @@
-from cgitb import small
 import requests
 import datetime
 import time
@@ -10,8 +9,7 @@ import numpy
 
 def detect(img, video, now_time):
 
-  model = torch.hub.load('ultralytics/yolov5', 'custom',
-                         path='leaves/best.pt')
+  model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/best.pt')
   model.iou = 0.5
   model.conf = 0.3
 
@@ -148,7 +146,7 @@ while 1:
 
         except:
           print(f"{err} Error")
-          
+
       time.sleep(3300)
 
     else:
