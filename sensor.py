@@ -52,16 +52,20 @@ def detect(img, video, now_time):
       f'leaves/color{video}/color{video}_{now_time}.png', hybrid)
   return (1-blue/total_leaves)*100
 
-
-def get_token(num):
+def login(account, password):
   account = requests.post(
       f'http://114.33.145.3/api/users/login',
       json={
-          "account": f'{num}',
-          "password": f'{num}'
+          "account": account,
+          "password": password
       }, timeout=5)
   return account
 
+def get_sensor_data(type):
+  data = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
+      "FunNo": f"SF001_{type}_No4",
+  }, timeout=5)
+  return data
 
 def create_sensor_data(url, headers, data, smallBlockId, id):
   req = requests.post(
@@ -74,36 +78,48 @@ def create_sensor_data(url, headers, data, smallBlockId, id):
       }, timeout=5)
   return req
 
+def refresh_token(id, refreshToken):
+  refresh = requests.post('http://114.33.145.3/api/users/token',
+                          json={
+                              "userId": id,
+                              "token": refreshToken
+                          }, timeout=5)
+  return refresh
+
+
 
 url = ["healthDatas/addHealthData", "humidityDatas/addHumidityData",
        "temperatureDatas/addtemperatureData"]
-accessToken = [get_token(3).json()['accessToken'],
-               get_token(2).json()['accessToken'],
-               get_token(1).json()['accessToken']]
-refreshToken = [get_token(3).json()['refreshToken'],
-                get_token(2).json()['refreshToken'],
-                get_token(1).json()['refreshToken']]
-id = [get_token(3).json()['user']['id'],
-      get_token(2).json()['user']['id'],
-      get_token(1).json()['user']['id']]
-# print(accessToken)
-# print(refreshToken)
-# print(id)
+smallBlockId = [1,2,6]
+
+account = login("sensor", "123sensor")
+accessToken = account.json()['accessToken']
+refreshToken = account.json()['refreshToken']
+id = account.json()['user']['id']
+headers = {'Authorization': f'Bearer {accessToken}'}
+
 while 1:
 
     now_time = datetime.datetime.now().strftime('%Y-%m-%d,%H-%M-%S')
     minute_date = datetime.datetime.now().strftime('%Y-%m-%d,%H-%M-%S')[-5:-3]
 
-    if minute_date == '50':
-      for i in range(2, 5):
+    if minute_date == '50' :
 
+      check = requests.post('http://114.33.145.3/api/sensors/allSensors',
+                            headers=headers, timeout=5)
+      if check.status_code == 403:
+          refresh = refresh_token(id, refreshToken)
+          accessToken = refresh.json()['accessToken']
+          refreshToken = refresh.json()['refreshToken']
+          headers = {'Authorization': f'Bearer {accessToken}'}
+
+      rh = get_sensor_data("HUMI").json()['d']
+      rt = get_sensor_data("TEMP").json()['d']
+
+      for i in range(2, 5):
+        
         try:
           err = f'video{i-1}'
-
-          if i == 4:
-            smallBlockId = 6
-          else:
-            smallBlockId = i-1
 
           img_data = requests.get(
               f'http://219.86.140.31:890{i}/cgi-bin/viewer/video.jpg?streamid=0', auth=('root', 'a7075701'), timeout=5)
@@ -111,48 +127,14 @@ while 1:
           with open(pic_path, 'wb') as handler:
               handler.write(img_data.content)
 
+          value = [round(detect(pic_path, i-1, now_time), 1), rh, rt]
+
           for sensor in range(0, 3):
-            headers = {'Authorization': f'Bearer {accessToken[sensor]}'}
-
-            if sensor == 0:
-              value = round(detect(pic_path, i-1, now_time), 1)
-            elif sensor == 1:
-              rh = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
-                  "FunNo": "SF001_HUMI_No4",
-              }, timeout=5)
-              value = rh.json()['d']
-            elif sensor == 2:
-              rt = requests.post('http://220.130.108.181:8866/serviceRTU.asmx/FunNoValueGet', json={
-                  "FunNo": "SF001_TEMP_No4",
-              }, timeout=5)
-              value = rt.json()['d']
-            # print(f'{value}:{accessToken[sensor]}')
-
             data = create_sensor_data(
-                url[sensor], headers, value, smallBlockId, 3-sensor)
-
-            if data.status_code == 403:
-              # print("refresh")
-              refresh = requests.post('http://114.33.145.3/api/users/token',
-                                      json={
-                                          "userId": id[sensor],
-                                          "token": refreshToken[sensor]
-                                      }, timeout=5)
-              accessToken[sensor] = refresh.json()['accessToken']
-              refreshToken[sensor] = refresh.json()['refreshToken']
-              headers = {'Authorization': f'Bearer {accessToken[sensor]}'}
-              tt = create_sensor_data(
-                  url[sensor], headers, value, smallBlockId, 3-sensor)
+                url[sensor], headers, value[sensor], smallBlockId[i-2], 3-sensor)
 
         except:
           print(f"{err} Error")
 
-      time.sleep(3300)
+    time.sleep(60)
 
-    else:
-        time_aim = str(datetime.datetime.now() + datetime.timedelta(hours=1)
-                       )[:13]+':50:00'
-        target_time = datetime.datetime.strptime(time_aim, '%Y-%m-%d %H:%M:%S')
-        delay = (target_time - datetime.datetime.now()
-                 ).total_seconds()
-        time.sleep(delay)
