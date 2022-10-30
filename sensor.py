@@ -9,7 +9,7 @@ import numpy
 
 def detect(img, video, now_time):
 
-  model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/yolov5m6_best-int8_edgetpu.best')
+  model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/yolov5m6_best.pt')
   model.iou = 0.5
   model.conf = 0.5
 
