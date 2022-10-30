@@ -9,9 +9,9 @@ import numpy
 
 def detect(img, video, now_time):
 
-  model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/best.pt')
+  model = torch.hub.load('ultralytics/yolov5', 'custom', path='leaves/yolov5m6_best-int8_edgetpu.best')
   model.iou = 0.5
-  model.conf = 0.3
+  model.conf = 0.5
 
   results = model(img, size=1280)
   results.save(save_dir=f'leaves/detect{video}/exp')
